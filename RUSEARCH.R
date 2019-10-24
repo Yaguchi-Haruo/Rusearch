@@ -26,7 +26,7 @@ for(i in 1:len.sample){
   log001 <- system(com001,intern=T)
 }
 
-#join pairends　オーバーラップなし、NNNNNNNNを挟んで結合
+#join pairends　オーバーラップなし、NNNNNNNNを挟んで結合 出力ファイル名がXXX_join.fastqになっているので次のコマンド時に注意
 #for(i in 1:len.sample){
 #  com001 <- paste("usearch -fastq_join ",fnFs[i],
 #                  " -reverse ",fnRs[i]," -fastqout ",
@@ -46,9 +46,9 @@ for(i in 1:len.sample){
 #python3系の実行ファイルにpathが通っていて、workpathにcutPrimers.pyがあること
 #for(i in 1:len.sample){
 #  pycom1 <- paste("python cutPrimers.py -r1 ",sample.names[i],"_merged.fastq ",
-#                  "-pr15 MiFishULPPrimerF.fas -pr13 MiFishULPrimerRrev.fas -tr1 ",
+#                  "-pr15 MiFishPrimerF.fas -pr13 MiFishPrimerRrev.fas -tr1 ",
 #                  sample.names[i],"_stripped.fastq -utr1 ",sample.names[i],
-#                  "_untrimmed.fastq.gz -t 8",sep="")
+#                  "_untrimmed.fastq.gz -t 4",sep="")
 #  pylog1 <- system(pycom1,intern=T)
 #}
 
@@ -95,11 +95,12 @@ for(i in 1:len.sample){
   log007 <- system(com007,intern=T)
 }
 
-#集計
+#集計　デノイジングとクラスタリングで集約した塩基配列ごと（OTU）にサンプル別のリード数を一覧表化
 library(tidyr)
 library(stringr)
 library("Biostrings")
 
+#UNOISE　デノイジング
 df <- data.frame()
 
 for(i in 1:len.sample){
@@ -108,7 +109,8 @@ for(i in 1:len.sample){
   zotu_size = ZotuTab[,2]
   dfZotu <- data.frame(seq_name, zotu_size)
   dfZotu <- dfZotu %>% dplyr::mutate(sample = sample.names[i], 
-                                     sample_seq_name = paste0(sample, "_", str_sub(seq_name,start=1,end=4), str_pad(str_sub(seq_name,start=5,end=str_length(seq_name)),width=3,side="left","0")))
+                                     sample_seq_name = paste0(sample, "_", str_sub(seq_name,start=1,end=4), 
+                                                              str_pad(str_sub(seq_name,start=5,end=str_length(seq_name)),width=3,side="left","0")))
 
   fastaFile <- readDNAStringSet(paste0(sample.names[i],"_zotus.fas"))
   seq_name = names(fastaFile)
@@ -121,9 +123,9 @@ for(i in 1:len.sample){
 ResultTable <- df %>% dplyr::group_by(sequence,sample) %>% 
   dplyr::summarize(read_size=sum(zotu_size)) %>% spread(sample,read_size)
 
-write.table(ResultTable, "ResultTable_zotus.txt")
+write.csv(ResultTable, "ResultTable_zotus.csv")
 
-#UPARSE
+#UPARSE　クラスタリング
 df <- data.frame()
 
 for(i in 1:len.sample){
@@ -132,7 +134,8 @@ for(i in 1:len.sample){
   zotu_size = ZotuTab[,2]
   dfZotu <- data.frame(seq_name, zotu_size)
   dfZotu <- dfZotu %>% dplyr::mutate(sample = sample.names[i], 
-                                     sample_seq_name = paste0(sample, "_", str_sub(seq_name,start=1,end=4), str_pad(str_sub(seq_name,start=5,end=str_length(seq_name)),width=3,side="left","0")))
+                                     sample_seq_name = paste0(sample, "_", str_sub(seq_name,start=1,end=4), 
+                                                              str_pad(str_sub(seq_name,start=5,end=str_length(seq_name)),width=3,side="left","0")))
   
   fastaFile <- readDNAStringSet(paste0(sample.names[i],"_otus.fas"))
   seq_name = names(fastaFile)
@@ -145,4 +148,4 @@ for(i in 1:len.sample){
 ResultTable <- df %>% dplyr::group_by(sequence,sample) %>% 
   dplyr::summarize(read_size=sum(zotu_size)) %>% spread(sample,read_size)
 
-write.table(ResultTable, "ResultTable_otus.txt")
+write.csv(ResultTable, "ResultTable_otus.csv")
