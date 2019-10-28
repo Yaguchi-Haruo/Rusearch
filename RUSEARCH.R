@@ -79,6 +79,7 @@ for(i in 1:len.sample){
 }
 
 #UNOISE3　デノイジング
+#ノイジー配列が多く残ってしまう場合は-unoise_alphaを1.0などに下げると改善する
 for(i in 1:len.sample){
   com006 <- paste("usearch -unoise3 ",sample.names[i],"_uniques.fasta -zotus ",
                   sample.names[i],"_zotus.fas -unoise_alpha 2.0 -relabel Zotu",sep="")
@@ -106,7 +107,10 @@ for(i in 1:len.sample){
   log007 <- system(com007,intern=T)
 }
 
+
 #集計　デノイジングとクラスタリングで集約した塩基配列ごと（OTU）にサンプル別のリード数を一覧表化
+#エクセルのピボット集計と同様の集計表を作成
+
 library(tidyr)
 library(stringr)
 library("Biostrings")
@@ -160,3 +164,11 @@ ResultTable <- df %>% dplyr::group_by(sequence,sample) %>%
   dplyr::summarize(read_size=sum(zotu_size)) %>% spread(sample,read_size)
 
 write.csv(ResultTable, "ResultTable_otus.csv")
+
+#塩基配列を生物種名に対応づけるためには、BLAST検索を行う。
+#ResultTable_(z)otus.csvの1,2列目からfasta形式の塩基配列一覧を作る。
+#（エクセルで開いて、1,2列目をテキストエディタにコピー→"\n"（改行）を"\n>"に置換、"\t"（タブ）を"\n"に置換）
+#NCBIのBLASTn https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&PAGE_TYPE=BlastSearch&LINK_LOC=blasthome に
+#fasta形式の一覧をコピー&ペースト、Database Others, Optimize for blastnを選択してBLASTボタンを押す。
+#検索結果のRIDのDownload AllからTextとHitTable(csv)をダウンロードして、テキストエディタ等で各配列ごとに確認することができる。
+
