@@ -4,11 +4,18 @@ install.packages("stringr")
 install.packages("BiocManager")
 BiocManager::install("Biostrings")
 
+#usearchはwindows用の実行ファイルを https://www.drive5.com/usearch/download.html から入手し
+#適当なフォルダ（例：C:\usearch）におく。そのフォルダにpathを通しておく。
+#（設定の検索に「システムの詳細設定」と入力して検索→右下の環境変数のボタンをクリック→新規でpathを追加）
+#usearchの実行ファイルのファイル名をusearch.exeにリネームしておく。
 
 workpath<-"D:/NGS/Rusearch/"  #作業フォルダ名を入れる
 setwd(workpath)
 
-# from DADA2 tutorial
+#作業フォルダ内に解析したいdemultiplicateしたNGS(illumina)の出力のfastqファイルを入れる
+#fastq.gzは7-zip等を使用して.fastq形式に展開しておく
+
+# quoted from DADA2 tutorial
 # Forward and reverse fastq filenames have format: SAMPLENAME_R1_001.fastq and SAMPLENAME_R2_001.fastq
 fnFs <- sort(list.files(workpath, pattern="_R1_001.fastq", full.names =  TRUE))
 fnRs <- sort(list.files(workpath, pattern="_R2_001.fastq", full.names = TRUE))
@@ -18,7 +25,8 @@ sample.names <- sapply(strsplit(basename(fnFs), "_"), `[`, 1)
 #解析するFASTQファイル（ペア）数
 len.sample <- length(sample.names)
 
-#merge pairends　ペアエンドがオーバーラップしている場合
+#merge pairends　ペアエンドがオーバーラップしている場合のペアエンドのマージ
+#fnFs[],fnRs[]にはファイル名だけでなくworkpathも含まれているので注意
 for(i in 1:len.sample){
   com001 <- paste("usearch -fastq_mergepairs ",fnFs[i],
                   " -reverse ",fnRs[i]," -fastqout ",
@@ -26,15 +34,18 @@ for(i in 1:len.sample){
   log001 <- system(com001,intern=T)
 }
 
-#join pairends　オーバーラップなし、NNNNNNNNを挟んで結合 出力ファイル名がXXX_join.fastqになっているので次のコマンド時に注意
+#join pairends　オーバーラップなし、NNNNNNNNを挟んで結合
+#fnFs[],fnRs[]にはファイル名だけでなくworkpathも含まれているので注意
 #for(i in 1:len.sample){
 #  com001 <- paste("usearch -fastq_join ",fnFs[i],
 #                  " -reverse ",fnRs[i]," -fastqout ",
-#                  workpath,sample.names[i],"_join.fastq",sep="")
+#                  workpath,sample.names[i],"_merged.fastq",sep="")
 #  log001 <- system(com001,intern=T)
 #}
 
 #trim primers　USEARCHのtruncateを使う場合（プライマー部分固定長）
+#MiFish-U-F NNNNNNGTCGGTAAAACTCGTGCCAGC (27)
+#MiFish-U-R NNNNNNCATAGTGGGGTATCTAATCCCAGTTTG (33)
 for(i in 1:len.sample){
   com002 <- paste("usearch -fastx_truncate ",sample.names[i],
                   "_merged.fastq -stripleft 27 -stripright 33 -fastqout ",
