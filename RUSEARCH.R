@@ -1,3 +1,8 @@
+#############################
+#       RUSEARCH.R          #
+#    Kazuyuki Ooi (KEEA)    #
+#############################
+
 #使用するパッケージのインストール
 install.packages("tidyr")
 install.packages("stringr")
